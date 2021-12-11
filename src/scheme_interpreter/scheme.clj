@@ -546,7 +546,7 @@
   "Lee una cadena desde la terminal/consola. Si los parentesis no estan correctamente balanceados al presionar Enter/Intro,
    se considera que la cadena ingresada es una subcadena y el ingreso continua. De lo contrario, se la devuelve completa."
   []
-  ()
+  (read-line)
 )
 
 
@@ -597,8 +597,8 @@
 (defn buscar
   "Busca una clave en un ambiente (una lista con claves en las posiciones impares [1, 3, 5...] y valores en las pares [2, 4, 6...]
    y devuelve el valor asociado. Devuelve un error :unbound-variable si no la encuentra."
-  []
-  ()
+  [k amb]
+  (or (second (first (filter (fn [pair] (= k (first pair))) (partition 2 amb)))) (generar-mensaje-error :unbound-variable k))
 )
 
 ; user=> (error? (list (symbol ";ERROR:") 'mal 'hecho))
@@ -609,9 +609,9 @@
 ; true
 (defn error?
   "Devuelve true o false, segun sea o no el arg. una lista con `;ERROR:` o `;WARNING:` como primer elemento."
-  []
-  ()
-)
+  [lst]
+  (let [elem (first lst)]
+    (or (= elem (symbol ";ERROR:")) (= elem (symbol ";WARNING:")))))
 
 ; user=> (proteger-bool-en-str "(or #F #f #t #T)")
 ; "(or %F %f %t %T)"
@@ -621,9 +621,9 @@
 ; ""
 (defn proteger-bool-en-str
   "Cambia, en una cadena, #t por %t y #f por %f (y sus respectivas versiones en mayusculas), para poder aplicarle read-string."
-  []
-  ()
-)
+  [string]
+  ; TODO: check if i need to limit to t and f
+  (apply str (map (fn [c] (if (= c \#) \% c)) string)))
 
 ; user=> (restaurar-bool (read-string (proteger-bool-en-str "(and (or #F #f #t #T) #T)")))
 ; (and (or #F #f #t #T) #T)
@@ -631,9 +631,12 @@
 ; (and (or #F #f #t #T) #T)
 (defn restaurar-bool
   "Cambia, en un codigo leido con read-string, %t por #t y %f por #f (y sus respectivas versiones en mayusculas)."
-  []
-  ()
-)
+  [string]
+  (apply str (map (fn [c] (if (= c \%) \# c)) string)))
+
+(defn str-lower
+  [arg]
+  (clojure.string/lower-case (str arg)))
 
 ; user=> (igual? 'if 'IF)
 ; true
@@ -647,8 +650,8 @@
 ; false
 (defn igual?
   "Verifica la igualdad entre dos elementos al estilo de Scheme (case-insensitive)"
-  []
-  ()
+  [one, other]
+  (= (str-lower one) (str-lower other))
 )
 
 ; user=> (fnc-append '( (1 2) (3) (4 5) (6 7)))
@@ -659,8 +662,10 @@
 ; (;ERROR: append: Wrong type in arg A)
 (defn fnc-append
   "Devuelve el resultado de fusionar listas."
-  []
-  ()
+  [lst]
+  (reduce (fn [acc x] (if (seq? x) (concat acc x) (reduced (generar-mensaje-error :wrong-type-arg 'append x))))
+    '()
+    lst)
 )
 
 ; user=> (fnc-equal? ())
@@ -681,9 +686,8 @@
 ; #f
 (defn fnc-equal?
   "Compara elementos. Si son iguales, devuelve #t. Si no, #f."
-  []
-  ()
-)
+  [lst]
+  (if (true? (if (seq lst) (apply = (map str-lower lst)) true)) "#t" "#f"))
 
 ; user=> (fnc-read ())
 ; (hola
@@ -835,7 +839,7 @@
 ; ((;ERROR: unbound variable: n) (x 6 y 11 z "hola"))
 (defn evaluar-escalar
   "Evalua una expresion escalar. Devuelve una lista con el resultado y un ambiente."
-  []
+  [arg1 arg2]
   ()
 )
 
