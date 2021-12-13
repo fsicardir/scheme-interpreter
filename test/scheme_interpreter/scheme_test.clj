@@ -77,3 +77,64 @@
     (is (= "#f" (fnc-equal? '("asd" "aSd" "other" "ASD" "Asd"))))
     (is (= "#f" (fnc-equal? '('x 'a 'a))))
     (is (= "#f" (fnc-equal? '(\b \a \A))))))
+
+(deftest fnc-sumar-test
+  (testing "fnc-sumar"
+    (is (= 0 (fnc-sumar ())))
+    (is (= 3 (fnc-sumar '(3))))
+    (is (= 7 (fnc-sumar '(3 4))))
+    (is (= 12 (fnc-sumar '(3 4 5))))
+    (is (= 18 (fnc-sumar '(3 4 5 6))))
+    (is (= (generar-mensaje-error :wrong-type-arg-1 '+ 'A) (fnc-sumar '(A 4 5 6))))
+    (is (= (generar-mensaje-error :wrong-type-arg-2 '+ 'A) (fnc-sumar '(3 A 5 6))))
+    (is (= (generar-mensaje-error :wrong-type-arg-2 '+ 'A) (fnc-sumar '(3 4 A 6))))))
+
+(deftest fnc-restar-test
+  (testing "fnc-restar"
+    (is (= (generar-mensaje-error :wrong-number-args-oper '-) (fnc-restar ())))
+    (is (= -3 (fnc-restar '(3))))
+    (is (= -1 (fnc-restar '(3 4))))
+    (is (= -6 (fnc-restar '(3 4 5))))
+    (is (= -12 (fnc-restar '(3 4 5 6))))
+    (is (= (generar-mensaje-error :wrong-type-arg-1 '- 'A) (fnc-restar '(A 4 5 6))))
+    (is (= (generar-mensaje-error :wrong-type-arg-2 '- 'A) (fnc-restar '(3 A 5 6))))
+    (is (= (generar-mensaje-error :wrong-type-arg-2 '- 'A) (fnc-restar '(3 4 A 6))))))
+
+(deftest fnc-menor-test
+  (testing "fnc-menor"
+    (is (= "#t" (fnc-menor ())))
+    (is (= "#t" (fnc-menor '(3))))
+    (is (= "#t" (fnc-menor '(3 4))))
+    (is (= "#t" (fnc-menor '(3 4 5))))
+    (is (= "#t" (fnc-menor '(3 4 5 6))))
+    (is (= "#f" (fnc-menor '(3 4 4 6))))
+    (is (= "#f" (fnc-menor '(3 4 1 6))))
+    (is (= (generar-mensaje-error :wrong-type-arg-1 '< 'A) (fnc-menor '(A 4 5 6))))
+    (is (= (generar-mensaje-error :wrong-type-arg-2 '< 'A) (fnc-menor '(3 A 5 6))))
+    (is (= (generar-mensaje-error :wrong-type-arg-2 '< 'A) (fnc-menor '(3 4 A 6))))))
+
+(deftest fnc-mayor-test
+  (testing "fnc-mayor"
+    (is (= "#t" (fnc-mayor ())))
+    (is (= "#t" (fnc-mayor '(1))))
+    (is (= "#t" (fnc-mayor '(2 1))))
+    (is (= "#t" (fnc-mayor '(3 2 1))))
+    (is (= "#t" (fnc-mayor '(4 3 2 1))))
+    (is (= "#f" (fnc-mayor '(4 2 2 1))))
+    (is (= "#f" (fnc-mayor '(4 4 1 4))))
+    (is (= (generar-mensaje-error :wrong-type-arg-1 '> 'A) (fnc-mayor '(A 4 5 6))))
+    (is (= (generar-mensaje-error :wrong-type-arg-2 '> 'A) (fnc-mayor '(3 A 5 6))))
+    (is (= (generar-mensaje-error :wrong-type-arg-2 '> 'A) (fnc-mayor '(3 2 A 6))))))
+ 
+(deftest fnc-mayor-o-igual-test
+  (testing "fnc-mayor-o-igual"
+    (is (= "#t" (fnc-mayor-o-igual ())))
+    (is (= "#t" (fnc-mayor-o-igual '(1))))
+    (is (= "#t" (fnc-mayor-o-igual '(2 1))))
+    (is (= "#t" (fnc-mayor-o-igual '(3 2 1))))
+    (is (= "#t" (fnc-mayor-o-igual '(4 3 2 1))))
+    (is (= "#t" (fnc-mayor-o-igual '(4 2 2 1))))
+    (is (= "#f" (fnc-mayor-o-igual '(4 4 1 4))))
+    (is (= (generar-mensaje-error :wrong-type-arg-1 '>= 'A) (fnc-mayor-o-igual '(A 4 5 6))))
+    (is (= (generar-mensaje-error :wrong-type-arg-2 '>= 'A) (fnc-mayor-o-igual '(3 A 5 6))))
+    (is (= (generar-mensaje-error :wrong-type-arg-2 '>= 'A) (fnc-mayor-o-igual '(3 2 A 6))))))

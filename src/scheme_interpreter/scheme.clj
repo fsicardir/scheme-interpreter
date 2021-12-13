@@ -586,9 +586,8 @@
 (defn actualizar-amb
   "Devuelve un ambiente actualizado con una clave (nombre de la variable o funcion) y su valor. 
   Si el valor es un error, el ambiente no se modifica. De lo contrario, se le carga o reemplaza la nueva informacion."
-  []
-  ()
-)
+  [amb k v]
+  (if (error? v) amb (conj (filter #(not= k (first %)) (partition 2 amb)) '(k v))))
 
 ; user=> (buscar 'c '(a 1 b 2 c 3 d 4 e 5))
 ; 3
@@ -598,7 +597,7 @@
   "Busca una clave en un ambiente (una lista con claves en las posiciones impares [1, 3, 5...] y valores en las pares [2, 4, 6...]
    y devuelve el valor asociado. Devuelve un error :unbound-variable si no la encuentra."
   [k amb]
-  (or (second (first (filter (fn [pair] (= k (first pair))) (partition 2 amb)))) (generar-mensaje-error :unbound-variable k))
+  (or (second (first (filter #(= k (first %)) (partition 2 amb)))) (generar-mensaje-error :unbound-variable k))
 )
 
 ; user=> (error? (list (symbol ";ERROR:") 'mal 'hecho))
@@ -668,6 +667,10 @@
     lst)
 )
 
+(defn map-bool
+  [b]
+  (if (true? b) "#t" "#f"))
+
 ; user=> (fnc-equal? ())
 ; #t
 ; user=> (fnc-equal? '(A))
@@ -687,7 +690,7 @@
 (defn fnc-equal?
   "Compara elementos. Si son iguales, devuelve #t. Si no, #f."
   [lst]
-  (if (true? (if (seq lst) (apply = (map str-lower lst)) true)) "#t" "#f"))
+  (map-bool (if (seq lst) (apply = (map str-lower lst)) true)))
 
 ; user=> (fnc-read ())
 ; (hola
@@ -704,6 +707,14 @@
   []
   ()
 )
+
+(defn num-operation
+  [op op-name]
+  (fn [x y] (if (number? x) (if (number? y) (op x y) (generar-mensaje-error :wrong-type-arg-2 op-name y)) (generar-mensaje-error :wrong-type-arg-1 op-name x))))
+
+(defn sum
+  ([] 0)
+  ([x y] ((num-operation + '+) x y)))
 
 ; user=> (fnc-sumar ())
 ; 0
@@ -723,9 +734,11 @@
 ; (;ERROR: +: Wrong type in arg2 A)
 (defn fnc-sumar
   "Suma los elementos de una lista."
-  []
-  ()
-)
+  [lst]
+  (reduce sum lst))
+
+(defn restar
+  ([x y] ((num-operation - '-) x y)))
 
 ; user=> (fnc-restar ())
 ; (;ERROR: -: Wrong number of args given)
@@ -745,9 +758,26 @@
 ; (;ERROR: -: Wrong type in arg2 A)
 (defn fnc-restar
   "Resta los elementos de un lista."
-  []
-  ()
-)
+  [lst]
+  (if (seq lst) (if (= 1 (count lst)) (- (first lst)) (reduce restar lst)) (generar-mensaje-error :wrong-number-args-oper '-)))
+
+(defn cmp-operation
+  [op op-name]
+  (fn
+    ([] true)
+    ([x] true)
+    ([x y] ((num-operation op op-name) x y))
+    ([x y & more]
+     (let [c ((num-operation op op-name) x y)]
+       (if 
+         (= true c) (if (next more)
+                      (recur y (first more) (next more))
+                      ((num-operation op op-name) y (first more)))
+         c)))))
+
+(defn menor
+  ([lst]
+   (apply (cmp-operation < '<) lst)))
 
 ; user=> (fnc-menor ())
 ; #t
@@ -771,10 +801,14 @@
 ; (;ERROR: <: Wrong type in arg2 A)
 (defn fnc-menor
   "Devuelve #t si los numeros de una lista estan en orden estrictamente creciente; si no, #f."
-  []
-  ()
-)
+  [lst]
+  (let [r (menor lst)]
+    (if (boolean? r) (map-bool r) r)))
 
+
+(defn mayor
+  ([lst]
+   (apply (cmp-operation > '>) lst)))
 ; user=> (fnc-mayor ())
 ; #t
 ; user=> (fnc-mayor '(1))
@@ -797,10 +831,13 @@
 ; (;ERROR: >: Wrong type in arg2 A)
 (defn fnc-mayor
   "Devuelve #t si los numeros de una lista estan en orden estrictamente decreciente; si no, #f."
-  []
-  ()
-)
+  [lst]
+  (let [r (mayor lst)]
+    (if (boolean? r) (map-bool r) r)))
 
+(defn mayor-o-igual
+  ([lst]
+   (apply (cmp-operation >= '>=) lst)))
 ; user=> (fnc-mayor-o-igual ())
 ; #t
 ; user=> (fnc-mayor-o-igual '(1))
@@ -823,9 +860,9 @@
 ; (;ERROR: >=: Wrong type in arg2 A)
 (defn fnc-mayor-o-igual
   "Devuelve #t si los numeros de una lista estan en orden decreciente; si no, #f."
-  []
-  ()
-)
+  [lst]
+  (let [r (mayor-o-igual lst)]
+    (if (boolean? r) (map-bool r) r)))
 
 ; user=> (evaluar-escalar 32 '(x 6 y 11 z "hola"))
 ; (32 (x 6 y 11 z "hola"))
@@ -839,7 +876,7 @@
 ; ((;ERROR: unbound variable: n) (x 6 y 11 z "hola"))
 (defn evaluar-escalar
   "Evalua una expresion escalar. Devuelve una lista con el resultado y un ambiente."
-  [arg1 arg2]
+  [exp-escalar amb]
   ()
 )
 
