@@ -1,4 +1,4 @@
-(load "/resources/jarras/breadth.scm")
+(load "breadth.scm")
 
 (define (jarra5 x) (car x))
 
