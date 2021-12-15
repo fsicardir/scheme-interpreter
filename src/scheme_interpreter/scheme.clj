@@ -221,7 +221,7 @@
 
     (igual? fnc 'append)  (fnc-append lae)
     (igual? fnc 'car)  (fnc-car lae)
-    (igual? fnc 'cdr)  (fnc-car lae)
+    (igual? fnc 'cdr)  (fnc-cdr lae)
     (igual? fnc 'cons)  (fnc-cons lae)
     (igual? fnc 'display)  (fnc-display lae)
     (igual? fnc 'env)  (fnc-env lae)
@@ -1028,7 +1028,10 @@
       (let [var-name (first args)
             value (second args)
             old-value (buscar var-name amb)]
-            (if (error? old-value) (list old-value amb) (list (symbol "#<unspecified>") (actualizar-amb amb var-name value))))
+            (if (error? old-value) 
+              (list old-value amb) 
+              (list (symbol "#<unspecified>") (let [ev (evaluar value amb) res (first ev) nuevo-amb (second ev)] (actualizar-amb nuevo-amb var-name res)))))
       (generar-mensaje-error :missing-or-extra 'set! expr))))
 
 ; Al terminar de cargar el archivo en el REPL de Clojure, se debe devolver true.
+true
