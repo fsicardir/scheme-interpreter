@@ -126,6 +126,24 @@
 
         (igual? (first expre) 'define) (evaluar-define expre amb)
 
+        (igual? (first expre) 'if) (evaluar-if expre amb)
+
+        (igual? (first expre) 'or) (evaluar-or expre amb)
+
+        (igual? (first expre) 'set!) (evaluar-set! expre amb)
+
+        (igual? (first expre) 'cond) (evaluar-cond expre amb)
+
+        (igual? (first expre) 'exit) (evaluar-exit expre amb)
+         
+        (igual? (first expre) 'lambda) (evaluar-lambda expre amb)
+
+        (igual? (first expre) 'load) (evaluar-load expre amb)
+         
+        (igual? (first expre) 'quote) (evaluar-quote expre amb)
+
+        (igual? (first expre) 'eval) (evaluar-eval expre amb)
+
          ;
          ;
          ;
@@ -189,6 +207,10 @@
   [fnc lae amb]
   (cond
     (= fnc '<)            (fnc-menor lae)
+    (= fnc '>)            (fnc-mayor lae)
+    (= fnc '>=)           (fnc-mayor-o-igual lae)
+    (= fnc '+)            (fnc-sumar lae)
+    (= fnc '-)            (fnc-restar lae)
 
     ;
     ;
@@ -198,6 +220,20 @@
 
 
     (igual? fnc 'append)  (fnc-append lae)
+    (igual? fnc 'car)  (fnc-car lae)
+    (igual? fnc 'cdr)  (fnc-car lae)
+    (igual? fnc 'cons)  (fnc-cons lae)
+    (igual? fnc 'display)  (fnc-display lae)
+    (igual? fnc 'env)  (fnc-env lae)
+    (igual? fnc 'equal?)  (fnc-equal? lae)
+    (igual? fnc 'length)  (fnc-length lae)
+    (igual? fnc 'list)  (fnc-list lae)
+    (igual? fnc 'list?)  (fnc-list? lae)
+    (igual? fnc 'newline)  (fnc-newline lae)
+    (igual? fnc 'not)  (fnc-not lae)
+    (igual? fnc 'null?)  (fnc-null? lae)
+    (igual? fnc 'read)  (fnc-read lae)
+    (igual? fnc 'reverse)  (fnc-reverse lae)
 
     ;
     ;
@@ -545,10 +581,14 @@
 (defn leer-entrada
   "Lee una cadena desde la terminal/consola. Si los parentesis no estan correctamente balanceados al presionar Enter/Intro,
    se considera que la cadena ingresada es una subcadena y el ingreso continua. De lo contrario, se la devuelve completa."
-  []
-  (read-line)
-)
-
+  ([] (leer-entrada ""))
+  ([in]
+   (let [input (str in (read-line))
+         n (verificar-parentesis input)]
+     (cond
+       (= 0 n) input
+       (> 0 n) (do (imprimir (generar-mensaje-error :warning-paren)) input)
+       :else (leer-entrada input)))))
 
 (defn map-paren
   [c]
@@ -587,7 +627,7 @@
   "Devuelve un ambiente actualizado con una clave (nombre de la variable o funcion) y su valor. 
   Si el valor es un error, el ambiente no se modifica. De lo contrario, se le carga o reemplaza la nueva informacion."
   [amb k v]
-  (if (error? v) amb (conj (filter #(not= k (first %)) (partition 2 amb)) '(k v))))
+  (if (error? v) amb (reduce concat (conj (filter #(not (igual? k (first %))) (partition 2 amb)) (list k v)))))
 
 ; user=> (buscar 'c '(a 1 b 2 c 3 d 4 e 5))
 ; 3
@@ -597,7 +637,7 @@
   "Busca una clave en un ambiente (una lista con claves en las posiciones impares [1, 3, 5...] y valores en las pares [2, 4, 6...]
    y devuelve el valor asociado. Devuelve un error :unbound-variable si no la encuentra."
   [k amb]
-  (or (second (first (filter #(= k (first %)) (partition 2 amb)))) (generar-mensaje-error :unbound-variable k))
+  (or (second (first (filter #(igual? k (first %)) (partition 2 amb)))) (generar-mensaje-error :unbound-variable k))
 )
 
 ; user=> (error? (list (symbol ";ERROR:") 'mal 'hecho))
@@ -609,8 +649,9 @@
 (defn error?
   "Devuelve true o false, segun sea o no el arg. una lista con `;ERROR:` o `;WARNING:` como primer elemento."
   [lst]
+  (if (seq? lst)
   (let [elem (first lst)]
-    (or (= elem (symbol ";ERROR:")) (= elem (symbol ";WARNING:")))))
+    (or (= elem (symbol ";ERROR:")) (= elem (symbol ";WARNING:")))) false))
 
 ; user=> (proteger-bool-en-str "(or #F #f #t #T)")
 ; "(or %F %f %t %T)"
@@ -630,8 +671,9 @@
 ; (and (or #F #f #t #T) #T)
 (defn restaurar-bool
   "Cambia, en un codigo leido con read-string, %t por #t y %f por #f (y sus respectivas versiones en mayusculas)."
-  [string]
-  (apply str (map (fn [c] (if (= c \%) \# c)) string)))
+  [lst]
+  ;(map (fn [c] (if (= c '%) (symbol #) c)) lst))
+  (postwalk-replace {'%t (symbol "#t") '%f (symbol "#f") '%T (symbol "#t") '%F (symbol "#f")} lst))
 
 (defn str-lower
   [arg]
@@ -704,9 +746,12 @@
 ; (;ERROR: Wrong number of args given #<primitive-procedure read>)
 (defn fnc-read
   "Devuelve la lectura de un elemento de Scheme desde la terminal/consola."
-  []
-  ()
-)
+  [lst]
+  (let [n (count lst)]
+    (cond
+      (= 0 n) (read-line)
+      (= 1 n) (generar-mensaje-error :io-ports-not-implemented (symbol "#<primitive-procedure read>"))
+      :else (generar-mensaje-error :wrong-number-args-prim-proc 'read))))
 
 (defn num-operation
   [op op-name]
@@ -876,9 +921,22 @@
 ; ((;ERROR: unbound variable: n) (x 6 y 11 z "hola"))
 (defn evaluar-escalar
   "Evalua una expresion escalar. Devuelve una lista con el resultado y un ambiente."
-  [exp-escalar amb]
-  ()
-)
+  [escalar amb]
+  (if (symbol? escalar) (list (buscar escalar amb) amb) (list escalar amb)))
+
+
+(defn define-var
+  [var-name expr amb]
+  (let [ev (evaluar expr amb)
+        value (first ev)
+        nuevo-amb (second ev)]
+    (actualizar-amb nuevo-amb var-name value)))
+
+(defn define-func
+  [head body amb]
+  (let [func-name (first head)
+        params (next head)]
+    (actualizar-amb amb func-name (list 'lambda params body))))
 
 ; user=> (evaluar-define '(define x 2) '(x 1))
 ; (#<unspecified> (x 2))
@@ -898,9 +956,17 @@
 ; ((;ERROR: define: bad variable (define 2 x)) (x 1))
 (defn evaluar-define
   "Evalua una expresion `define`. Devuelve una lista con el resultado y un ambiente actualizado con la definicion."
-  []
-  ()
-)
+  [expr amb]
+  (let [n (count expr)]
+    (if (not= 3 n)
+      (list (generar-mensaje-error :missing-or-extra 'define expr) amb)
+      (let [args (next expr) 
+            arg1 (first args)
+            arg2 (second args)]
+        (cond 
+          (symbol? arg1) (list (symbol "#<unspecified>") (define-var arg1 arg2 amb))
+          (and (seq? arg1) (seq arg1)) (list (symbol "#<unspecified>") (define-func arg1 arg2 amb))
+          :else (list (generar-mensaje-error :bad-variable 'define expr) amb))))))
 
 ; user=> (evaluar-if '(if 1 2) '(n 7))
 ; (2 (n 7))
@@ -920,9 +986,13 @@
 ; ((;ERROR: if: missing or extra expression (if 1)) (n 7))
 (defn evaluar-if
   "Evalua una expresion `if`. Devuelve una lista con el resultado y un ambiente eventualmente modificado."
-  []
-  ()
-)
+  [expr amb]
+  (let [n (count expr)]
+    (cond
+      (> 2 n) (generar-mensaje-error :missing-or-extra 'if expr)
+      (< 3 n) (generar-mensaje-error :missing-or-extra 'if expr)
+      :else (let [args (next expr) condition (first args) actions (next args)]
+              (if (not= false (evaluar condition amb)) (evaluar (first actions) amb) (evaluar (second actions) amb))))))
 
 ; user=> (evaluar-or (list 'or) (list (symbol "#f") (symbol "#f") (symbol "#t") (symbol "#t")))
 ; (#f (#f #f #t #t))
@@ -952,9 +1022,13 @@
 ; ((;ERROR: set!: bad variable 1) (x 0))
 (defn evaluar-set!
   "Evalua una expresion `set!`. Devuelve una lista con el resultado y un ambiente actualizado con la redefinicion."
-  []
-  ()
-)
-
+  [expr amb]
+  (let [args (next expr)]
+    (if (= 2 (count args))
+      (let [var-name (first args)
+            value (second args)
+            old-value (buscar var-name amb)]
+            (if (error? old-value) (list old-value amb) (list (symbol "#<unspecified>") (actualizar-amb amb var-name value))))
+      (generar-mensaje-error :missing-or-extra 'set! expr))))
 
 ; Al terminar de cargar el archivo en el REPL de Clojure, se debe devolver true.

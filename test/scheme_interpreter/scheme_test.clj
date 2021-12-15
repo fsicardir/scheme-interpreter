@@ -34,12 +34,14 @@
   (testing "buscar"
     (is (= 3 (buscar 'c '(c 3))))
     (is (= 3 (buscar 'c '(a 1 b 2 c 3 d 4 e 5))))
+    (is (= 3 (buscar 'C '(a 1 b 2 c 3 d 4 e 5))))
     (is (= (generar-mensaje-error :unbound-variable 'c) (buscar 'c '())))
     (is (= (generar-mensaje-error :unbound-variable 'c) (buscar 'c '(a 1 b 2 d 4 e 5))))))
 
 (deftest error?-test
   (testing "error?"
     (is (false? (error? (list))))
+    (is (false? (error? 123)))
     (is (false? (error? (list 'not 'an 'error))))
     (is (true? (error? (list (symbol ";WARNING:") 'an 'error))))
     (is (true? (error? (list (symbol ";ERROR:") 'an 'error))))))
@@ -50,13 +52,6 @@
     (is (= "asdf" (proteger-bool-en-str "asdf")))
     (is (= "as%tdf" (proteger-bool-en-str "as#tdf")))
     (is (= "as%tdf" (proteger-bool-en-str "as%tdf")))))
-
-(deftest restaurar-bool-test
-  (testing "restaurar-bool"
-    (is (= "" (restaurar-bool "")))
-    (is (= "asdf" (restaurar-bool "asdf")))
-    (is (= "as#tdf" (restaurar-bool "as#tdf")))
-    (is (= "as#tdf" (restaurar-bool "as%tdf")))))
 
 (deftest fnc-append-test
   (testing "fnc-append"
@@ -138,3 +133,24 @@
     (is (= (generar-mensaje-error :wrong-type-arg-1 '>= 'A) (fnc-mayor-o-igual '(A 4 5 6))))
     (is (= (generar-mensaje-error :wrong-type-arg-2 '>= 'A) (fnc-mayor-o-igual '(3 A 5 6))))
     (is (= (generar-mensaje-error :wrong-type-arg-2 '>= 'A) (fnc-mayor-o-igual '(3 2 A 6))))))
+
+(deftest evaluar-escalar-test
+  (testing "evaluar-escalar"
+    (is (= '(32 (x 6 y 11 z "hola")) (evaluar-escalar 32 '(x 6 y 11 z "hola"))))
+    (is (= '("chau" (x 6 y 11 z "hola")) (evaluar-escalar "chau" '(x 6 y 11 z "hola"))))
+    (is (= '(11 (x 6 y 11 z "hola")) (evaluar-escalar 'y '(x 6 y 11 z "hola"))))
+    (is (= '("hola" (x 6 y 11 z "hola")) (evaluar-escalar 'z '(x 6 y 11 z "hola"))))
+    (is (= (list (generar-mensaje-error :unbound-variable 'n) '(x 6 y 11 z "hola")) (evaluar-escalar 'n '(x 6 y 11 z "hola"))))
+        ))
+
+(deftest evaluar-define-test
+  (testing "evaluar-define"
+    (is (= (list (symbol "#<unspecified>") '(x 2)) (evaluar-define '(define x 2) '(x 1))))
+    (is (= (list (symbol "#<unspecified>") '(x 1 f (lambda (x) (+ x 1))) (evaluar-define '(define (f x) (+ x 1)) '(x 1)))))
+    (is (= (list (generar-mensaje-error :missing-or-extra 'define '(define)) '(x 1)) (evaluar-define '(define) '(x 1))))
+    (is (= (list (generar-mensaje-error :missing-or-extra 'define '(define x)) '(x 1)) (evaluar-define '(define x) '(x 1))))
+    (is (= (list (generar-mensaje-error :missing-or-extra 'define '(define x 2 3)) '(x 1)) (evaluar-define '(define x 2 3) '(x 1))))
+    (is (= (list (generar-mensaje-error :missing-or-extra 'define '(define ())) '(x 1)) (evaluar-define '(define ()) '(x 1))))
+    (is (= (list (generar-mensaje-error :bad-variable 'define '(define () 2)) '(x 1)) (evaluar-define '(define () 2) '(x 1))))
+    (is (= (list (generar-mensaje-error :bad-variable 'define '(define 2 x)) '(x 1)) (evaluar-define '(define 2 x) '(x 1))))
+    ))
