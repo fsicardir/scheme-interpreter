@@ -22,11 +22,15 @@
 (deftest igual?-test
   (testing "igual?"
     (is (true? (igual? "a" "a")))
-    (is (true? (igual? "A" "a")))
-    (is (true? (igual? "5" 5)))
-    (is (true? (igual? 5 "5")))
-    (is (true? (igual? "a" "A")))
+    (is (false? (igual? "A" "a")))
+    (is (false? (igual? "5" 5)))
+    (is (false? (igual? 5 "5")))
+    (is (false? (igual? "a" "A")))
     (is (true? (igual? "" "")))
+    (is (true? (igual? 5 5)))
+    (is (true? (igual? 'a 'a)))
+    (is (true? (igual? 'a 'A)))
+    (is (true? (igual? 'A 'a)))
     (is (true? (igual? "longer string   "  "longer string   ")))
     (is (false? (igual? "a" "b")))))
 
@@ -62,16 +66,16 @@
 
 (deftest fnc-equal-test
   (testing "fnc-append"
-    (is (= "#t" (fnc-equal? '())))
-    (is (= "#t" (fnc-equal? '(1 1))))
-    (is (= "#t" (fnc-equal? '("asd" "aSd" "asd"))))
-    (is (= "#t" (fnc-equal? '(\a \a \A))))
-    (is (= "#t" (fnc-equal? '('a 'a 'a))))
-    (is (= "#t" (fnc-equal? '("asd" "aSd" "asd" "ASD" "Asd"))))
-    (is (= "#f" (fnc-equal? '(1 2 1))))
-    (is (= "#f" (fnc-equal? '("asd" "aSd" "other" "ASD" "Asd"))))
-    (is (= "#f" (fnc-equal? '('x 'a 'a))))
-    (is (= "#f" (fnc-equal? '(\b \a \A))))))
+    (is (= (symbol "#t") (fnc-equal? '())))
+    (is (= (symbol "#t") (fnc-equal? '(1 1))))
+    (is (= (symbol "#t") (fnc-equal? '("asd" "aSd" "asd"))))
+    (is (= (symbol "#t") (fnc-equal? '(\a \a \A))))
+    (is (= (symbol "#t") (fnc-equal? '('a 'a 'a))))
+    (is (= (symbol "#t") (fnc-equal? '("asd" "aSd" "asd" "ASD" "Asd"))))
+    (is (= (symbol "#f") (fnc-equal? '(1 2 1))))
+    (is (= (symbol "#f") (fnc-equal? '("asd" "aSd" "other" "ASD" "Asd"))))
+    (is (= (symbol "#f") (fnc-equal? '('x 'a 'a))))
+    (is (= (symbol "#f") (fnc-equal? '(\b \a \A))))))
 
 (deftest fnc-sumar-test
   (testing "fnc-sumar"
@@ -97,39 +101,39 @@
 
 (deftest fnc-menor-test
   (testing "fnc-menor"
-    (is (= "#t" (fnc-menor ())))
-    (is (= "#t" (fnc-menor '(3))))
-    (is (= "#t" (fnc-menor '(3 4))))
-    (is (= "#t" (fnc-menor '(3 4 5))))
-    (is (= "#t" (fnc-menor '(3 4 5 6))))
-    (is (= "#f" (fnc-menor '(3 4 4 6))))
-    (is (= "#f" (fnc-menor '(3 4 1 6))))
+    (is (= (symbol "#t") (fnc-menor ())))
+    (is (= (symbol "#t") (fnc-menor '(3))))
+    (is (= (symbol "#t") (fnc-menor '(3 4))))
+    (is (= (symbol "#t") (fnc-menor '(3 4 5))))
+    (is (= (symbol "#t") (fnc-menor '(3 4 5 6))))
+    (is (= (symbol "#f") (fnc-menor '(3 4 4 6))))
+    (is (= (symbol "#f") (fnc-menor '(3 4 1 6))))
     (is (= (generar-mensaje-error :wrong-type-arg-1 '< 'A) (fnc-menor '(A 4 5 6))))
     (is (= (generar-mensaje-error :wrong-type-arg-2 '< 'A) (fnc-menor '(3 A 5 6))))
     (is (= (generar-mensaje-error :wrong-type-arg-2 '< 'A) (fnc-menor '(3 4 A 6))))))
 
 (deftest fnc-mayor-test
   (testing "fnc-mayor"
-    (is (= "#t" (fnc-mayor ())))
-    (is (= "#t" (fnc-mayor '(1))))
-    (is (= "#t" (fnc-mayor '(2 1))))
-    (is (= "#t" (fnc-mayor '(3 2 1))))
-    (is (= "#t" (fnc-mayor '(4 3 2 1))))
-    (is (= "#f" (fnc-mayor '(4 2 2 1))))
-    (is (= "#f" (fnc-mayor '(4 4 1 4))))
+    (is (= (symbol "#t") (fnc-mayor ())))
+    (is (= (symbol "#t") (fnc-mayor '(1))))
+    (is (= (symbol "#t") (fnc-mayor '(2 1))))
+    (is (= (symbol "#t") (fnc-mayor '(3 2 1))))
+    (is (= (symbol "#t") (fnc-mayor '(4 3 2 1))))
+    (is (= (symbol "#f") (fnc-mayor '(4 2 2 1))))
+    (is (= (symbol "#f") (fnc-mayor '(4 4 1 4))))
     (is (= (generar-mensaje-error :wrong-type-arg-1 '> 'A) (fnc-mayor '(A 4 5 6))))
     (is (= (generar-mensaje-error :wrong-type-arg-2 '> 'A) (fnc-mayor '(3 A 5 6))))
     (is (= (generar-mensaje-error :wrong-type-arg-2 '> 'A) (fnc-mayor '(3 2 A 6))))))
  
 (deftest fnc-mayor-o-igual-test
   (testing "fnc-mayor-o-igual"
-    (is (= "#t" (fnc-mayor-o-igual ())))
-    (is (= "#t" (fnc-mayor-o-igual '(1))))
-    (is (= "#t" (fnc-mayor-o-igual '(2 1))))
-    (is (= "#t" (fnc-mayor-o-igual '(3 2 1))))
-    (is (= "#t" (fnc-mayor-o-igual '(4 3 2 1))))
-    (is (= "#t" (fnc-mayor-o-igual '(4 2 2 1))))
-    (is (= "#f" (fnc-mayor-o-igual '(4 4 1 4))))
+    (is (= (symbol "#t") (fnc-mayor-o-igual ())))
+    (is (= (symbol "#t") (fnc-mayor-o-igual '(1))))
+    (is (= (symbol "#t") (fnc-mayor-o-igual '(2 1))))
+    (is (= (symbol "#t") (fnc-mayor-o-igual '(3 2 1))))
+    (is (= (symbol "#t") (fnc-mayor-o-igual '(4 3 2 1))))
+    (is (= (symbol "#t") (fnc-mayor-o-igual '(4 2 2 1))))
+    (is (= (symbol "#f") (fnc-mayor-o-igual '(4 4 1 4))))
     (is (= (generar-mensaje-error :wrong-type-arg-1 '>= 'A) (fnc-mayor-o-igual '(A 4 5 6))))
     (is (= (generar-mensaje-error :wrong-type-arg-2 '>= 'A) (fnc-mayor-o-igual '(3 A 5 6))))
     (is (= (generar-mensaje-error :wrong-type-arg-2 '>= 'A) (fnc-mayor-o-igual '(3 2 A 6))))))
@@ -140,8 +144,7 @@
     (is (= '("chau" (x 6 y 11 z "hola")) (evaluar-escalar "chau" '(x 6 y 11 z "hola"))))
     (is (= '(11 (x 6 y 11 z "hola")) (evaluar-escalar 'y '(x 6 y 11 z "hola"))))
     (is (= '("hola" (x 6 y 11 z "hola")) (evaluar-escalar 'z '(x 6 y 11 z "hola"))))
-    (is (= (list (generar-mensaje-error :unbound-variable 'n) '(x 6 y 11 z "hola")) (evaluar-escalar 'n '(x 6 y 11 z "hola"))))
-        ))
+    (is (= (list (generar-mensaje-error :unbound-variable 'n) '(x 6 y 11 z "hola")) (evaluar-escalar 'n '(x 6 y 11 z "hola"))))))
 
 (deftest evaluar-define-test
   (testing "evaluar-define"

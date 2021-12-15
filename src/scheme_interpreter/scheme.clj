@@ -224,7 +224,7 @@
     (igual? fnc 'cdr)  (fnc-cdr lae)
     (igual? fnc 'cons)  (fnc-cons lae)
     (igual? fnc 'display)  (fnc-display lae)
-    (igual? fnc 'env)  (fnc-env lae)
+    (igual? fnc 'env)  (fnc-env lae amb)
     (igual? fnc 'equal?)  (fnc-equal? lae)
     (igual? fnc 'length)  (fnc-length lae)
     (igual? fnc 'list)  (fnc-list lae)
@@ -673,7 +673,7 @@
   "Cambia, en un codigo leido con read-string, %t por #t y %f por #f (y sus respectivas versiones en mayusculas)."
   [lst]
   ;(map (fn [c] (if (= c '%) (symbol #) c)) lst))
-  (postwalk-replace {'%t (symbol "#t") '%f (symbol "#f") '%T (symbol "#t") '%F (symbol "#f")} lst))
+  (postwalk-replace {'%t (symbol "#t") '%f (symbol "#f") '%T (symbol "#T") '%F (symbol "#F")} lst))
 
 (defn str-lower
   [arg]
@@ -692,8 +692,7 @@
 (defn igual?
   "Verifica la igualdad entre dos elementos al estilo de Scheme (case-insensitive)"
   [one, other]
-  (= (str-lower one) (str-lower other))
-)
+  (if (and (symbol? one) (symbol? other)) (= (str-lower one) (str-lower other)) (= one other)))
 
 ; user=> (fnc-append '( (1 2) (3) (4 5) (6 7)))
 ; (1 2 3 4 5 6 7)
@@ -711,7 +710,7 @@
 
 (defn map-bool
   [b]
-  (if (true? b) "#t" "#f"))
+  (if (true? b) (symbol "#t") (symbol "#f")))
 
 ; user=> (fnc-equal? ())
 ; #t
@@ -749,7 +748,7 @@
   [lst]
   (let [n (count lst)]
     (cond
-      (= 0 n) (read-line)
+      (= 0 n) (restaurar-bool (read-string (proteger-bool-en-str (read-line))))
       (= 1 n) (generar-mensaje-error :io-ports-not-implemented (symbol "#<primitive-procedure read>"))
       :else (generar-mensaje-error :wrong-number-args-prim-proc 'read))))
 
@@ -936,7 +935,7 @@
   [head body amb]
   (let [func-name (first head)
         params (next head)]
-    (actualizar-amb amb func-name (list 'lambda params body))))
+    (actualizar-amb amb func-name (apply list 'lambda (if (nil? params) '() params) body))))
 
 ; user=> (evaluar-define '(define x 2) '(x 1))
 ; (#<unspecified> (x 2))
@@ -958,13 +957,13 @@
   "Evalua una expresion `define`. Devuelve una lista con el resultado y un ambiente actualizado con la definicion."
   [expr amb]
   (let [n (count expr)]
-    (if (not= 3 n)
+    (if (> 3 n)
       (list (generar-mensaje-error :missing-or-extra 'define expr) amb)
       (let [args (next expr) 
             arg1 (first args)
-            arg2 (second args)]
+            arg2 (next args)]
         (cond 
-          (symbol? arg1) (list (symbol "#<unspecified>") (define-var arg1 arg2 amb))
+          (symbol? arg1) (if (= 3 n) (list (symbol "#<unspecified>") (define-var arg1 (first arg2) amb)) (list (generar-mensaje-error :missing-or-extra 'define expr) amb))
           (and (seq? arg1) (seq arg1)) (list (symbol "#<unspecified>") (define-func arg1 arg2 amb))
           :else (list (generar-mensaje-error :bad-variable 'define expr) amb))))))
 
@@ -989,10 +988,21 @@
   [expr amb]
   (let [n (count expr)]
     (cond
-      (> 2 n) (generar-mensaje-error :missing-or-extra 'if expr)
-      (< 3 n) (generar-mensaje-error :missing-or-extra 'if expr)
-      :else (let [args (next expr) condition (first args) actions (next args)]
-              (if (not= false (evaluar condition amb)) (evaluar (first actions) amb) (evaluar (second actions) amb))))))
+      (> 3 n) (generar-mensaje-error :missing-or-extra 'if expr)
+      (< 4 n) (generar-mensaje-error :missing-or-extra 'if expr)
+      :else (let [args (next expr) 
+                  condition (first args) 
+                  ev-cond (evaluar condition amb)
+                  cond-res (first ev-cond)
+                  nuevo-amb (second ev-cond)
+                  actions (next args)
+                  nargs (count actions)]
+              (if (igual? (symbol "#f") cond-res)
+                  (if (= nargs 2)
+                    (do 
+                      (evaluar (second actions) nuevo-amb))
+                    (list (symbol "#<unspecified>") amb))
+                  (evaluar (first actions) nuevo-amb))))))
 
 ; user=> (evaluar-or (list 'or) (list (symbol "#f") (symbol "#f") (symbol "#t") (symbol "#t")))
 ; (#f (#f #f #t #t))
@@ -1006,9 +1016,11 @@
 ; (#f (#f #f #t #t))
 (defn evaluar-or
   "Evalua una expresion `or`.  Devuelve una lista con el resultado y un ambiente."
-  []
-  ()
-)
+  [expr amb]
+  (let [n (count expr)]
+    (if (= 0 n) 
+      (list (symbol "#f") amb)
+      (reduce (fn [acc x] (let [ev (evaluar x (second acc))] (if (igual? (symbol "#f") (first ev)) ev (reduced ev)))) (list (symbol "#f") amb) (next expr)))))
 
 ; user=> (evaluar-set! '(set! x 1) '(x 0))
 ; (#<unspecified> (x 1))
